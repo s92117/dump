@@ -1,0 +1,270 @@
+package com.aem.play.core.models;
+
+import com.day.cq.wcm.api.Page;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.sling.api.SlingHttpServletRequest;
+import org.apache.sling.models.annotations.DefaultInjectionStrategy;
+import org.apache.sling.models.annotations.Exporter;
+import org.apache.sling.models.annotations.ExporterConstants;
+import org.apache.sling.models.annotations.Model;
+import org.apache.sling.models.annotations.injectorspecific.ScriptVariable;
+
+/**
+ * Sling Model implementation for the HelloWorld breadcrumb component
+ * located at {@code /apps/aem-play/components/helloworld}.
+ */
+@Model(
+        adaptables = {SlingHttpServletRequest.class},
+        adapters = {
+                HelloWorldModel.class,
+                com.adobe.cq.export.json.ComponentExporter.class
+        },
+        resourceType = {HelloWorldModelImpl.RESOURCE_TYPE},
+        defaultInjectionStrategy = DefaultInjectionStrategy.OPTIONAL
+)
+@Exporter(
+        name = ExporterConstants.SLING_MODEL_EXPORTER_NAME,
+        extensions = ExporterConstants.SLING_MODEL_EXTENSION
+)
+@JsonSerialize(as = HelloWorldModelImpl.class)
+public class HelloWorldModelImpl implements HelloWorldModel {
+
+    /**
+     * The resource type for the breadcrumb component.
+     */
+    public static final String RESOURCE_TYPE =
+            "aem-play/components/helloworld";
+
+    /**
+     * Injected AEM current page object.
+     */
+    @ScriptVariable
+    private Page currentPage;
+
+    /**
+     * Returns the current AEM page.
+     *
+     * @return current page object
+     */
+    @Override
+    public Page getCurrentPage() {
+        return currentPage;
+    }
+
+    /**
+     * Builds and returns breadcrumb items based on the
+     * path segments after {@code aem-play}.
+     *
+     * @return list of breadcrumb items
+     */
+    @Override
+    public List<BreadcrumbItem> getBreadcrumbItems() {
+        List<BreadcrumbItem> items = new ArrayList<>();
+
+        if (currentPage == null) {
+            return items;
+        }
+
+        String path = currentPage.getPath();
+        String[] segments = path.split("/");
+
+        final String projectRoot = "aem-play";
+
+        int startIndex = -1;
+        for (int i = 0; i < segments.length; i++) {
+            if (projectRoot.equals(segments[i])) {
+                startIndex = i;
+                break;
+            }
+        }
+
+        if (startIndex == -1) {
+            return items;
+        }
+
+        StringBuilder buildPath = new StringBuilder("/content/").append(projectRoot);
+
+        for (int i = startIndex + 1; i < segments.length; i++) {
+            buildPath.append("/").append(segments[i]);
+
+            items.add(
+                new BreadcrumbItem(
+                    segments[i],
+                    buildPath.toString() + ".html"
+                )
+            );
+        }
+
+        return items;
+    }
+
+    /**
+     * Returns the exported component type for JSON model export.
+     *
+     * @return component resource type string
+     */
+    @Override
+    @JsonProperty(value = ":type")
+    public String getExportedType() {
+        return RESOURCE_TYPE;
+    }
+}
+
+
+-----------------------------------------------------
+package com.aem.play.core.models;
+
+/**
+ * Represents a single breadcrumb node containing display title and link.
+ */
+public class BreadcrumbItem {
+
+    /**
+     * The segment title displayed in the breadcrumb.
+     */
+    private final String title;
+
+    /**
+     * The target URL for the breadcrumb segment.
+     */
+    private final String link;
+
+    /**
+     * Constructs a breadcrumb item with title and link.
+     *
+     * @param title breadcrumb display name
+     * @param link  URL for the breadcrumb segment
+     */
+    public BreadcrumbItem(String title, String link) {
+        this.title = title;
+        this.link = link;
+    }
+
+    /**
+     * Returns the breadcrumb title.
+     *
+     * @return title string
+     */
+    public String getTitle() {
+        return title;
+    }
+
+    /**
+     * Returns the breadcrumb link.
+     *
+     * @return link string
+     */
+    public String getLink() {
+        return link;
+    }
+}
+--------------------------------------
+{
+  "content": {
+    "aem-play": {
+      "us": {
+        "en": {
+          "nt": {
+            "jcr:content": {
+              "component": {
+                "sling:resourceType": "aem-play/components/helloworld"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+--------------------------------------
+package com.aem.play.core.models;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.adobe.cq.testing.mock.context.AemContext;
+import org.apache.sling.testing.mock.sling.junit5.AemContextExtension;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
+
+/**
+ * Unit tests for HelloWorldModelImpl ensuring full coverage.
+ */
+@ExtendWith({AemContextExtension.class, MockitoExtension.class})
+public class HelloWorldModelImplTest {
+
+    private final AemContext context = new AemContext();
+
+    private HelloWorldModelImpl model;
+
+    @BeforeEach
+    void setup() {
+        context.load().json("/helloworldModelImpl.json", "/content");
+        context.addModelsForClasses(HelloWorldModelImpl.class, BreadcrumbItem.class);
+    }
+
+    @Test
+    void testBreadcrumbHappyPath() {
+        context.currentResource("/content/aem-play/us/en/nt/jcr:content/component");
+
+        model = context.request().adaptTo(HelloWorldModelImpl.class);
+
+        // Verify currentPage path
+        assertEquals("/content/aem-play/us/en/nt", model.getCurrentPage().getPath());
+
+        // Verify breadcrumb
+        List<BreadcrumbItem> items = model.getBreadcrumbItems();
+        assertEquals(3, items.size());
+
+        assertEquals("us", items.get(0).getTitle());
+        assertEquals("/content/aem-play/us.html", items.get(0).getLink());
+
+        assertEquals("en", items.get(1).getTitle());
+        assertEquals("/content/aem-play/us/en.html", items.get(1).getLink());
+
+        assertEquals("nt", items.get(2).getTitle());
+        assertEquals("/content/aem-play/us/en/nt.html", items.get(2).getLink());
+    }
+
+    @Test
+    void testExportedType() {
+        context.currentResource("/content/aem-play/us/en/nt/jcr:content/component");
+        model = context.request().adaptTo(HelloWorldModelImpl.class);
+
+        assertEquals(
+                "aem-play/components/helloworld",
+                model.getExportedType()
+        );
+    }
+
+    @Test
+    void testBreadcrumbWhenCurrentPageNull() {
+        context.currentResource("/does/not/exist");
+
+        model = context.request().adaptTo(HelloWorldModelImpl.class);
+
+        List<BreadcrumbItem> list = model.getBreadcrumbItems();
+        assertTrue(list.isEmpty());
+    }
+
+    @Test
+    void testBreadcrumbWhenProjectRootMissing() {
+        context.create().page("/content/site/page1"); // no aem-play in path
+        context.create().resource("/content/site/page1/jcr:content/component",
+                "sling:resourceType", "aem-play/components/helloworld");
+
+        context.currentResource("/content/site/page1/jcr:content/component");
+
+        model = context.request().adaptTo(HelloWorldModelImpl.class);
+
+        // breadcrumb list must be empty
+        assertTrue(model.getBreadcrumbItems().isEmpty());
+    }
+}
