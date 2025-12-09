@@ -1,44 +1,37 @@
 package com.aem.play.core.models;
 
 /**
- * Represents a single breadcrumb navigation item.
+ * Represents a single breadcrumb item.
  */
 public class BreadcrumbItem {
 
-    /**
-     * The display title of the breadcrumb segment.
-     */
     private final String title;
-
-    /**
-     * The generated link for the breadcrumb segment.
-     */
     private final String link;
 
     /**
-     * Constructor for {@code BreadcrumbItem}.
+     * Constructor.
      *
      * @param title breadcrumb display text
-     * @param link  URL for breadcrumb target
+     * @param link breadcrumb link
      */
-    public BreadcrumbItem(final String title, final String link) {
+    public BreadcrumbItem(String title, String link) {
         this.title = title;
         this.link = link;
     }
 
     /**
-     * Returns the breadcrumb segment title.
+     * Returns title.
      *
-     * @return title string
+     * @return title
      */
     public String getTitle() {
         return title;
     }
 
     /**
-     * Returns the breadcrumb link.
+     * Returns link.
      *
-     * @return link string
+     * @return link
      */
     public String getLink() {
         return link;
