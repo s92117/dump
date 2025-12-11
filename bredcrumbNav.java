@@ -1,3 +1,14 @@
+"blogbreadcrumb": {
+    "breadcrumbItems": [
+        { "title": "test", "link": "/content/zendesk/amer/en_us/test.html" },
+        { "title": "bc-child", "link": "/content/zendesk/amer/en_us/test/bc-child.html" },
+        { "title": "bl-child", "link": "/content/zendesk/amer/en_us/test/bc-child/bl-child.html" },
+        { "title": "bd-child2", "link": "/content/zendesk/amer/en_us/test/bc-child/bl-child/bp-child/bd-child2.html" }
+    ],
+    "type": "zendesk/components/blogbreadcrumb/v1/blogbreadcrumb"
+}
+
+
 package com.aem.play.core.models.impl;
 
 import com.aem.play.core.models.BlogBreadcrumbModel;
