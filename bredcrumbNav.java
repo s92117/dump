@@ -1,113 +1,82 @@
 package com.aem.play.core.models.impl;
 
-import com.adobe.cq.export.json.ComponentExporter;
-import com.adobe.cq.export.json.ExporterConstants;
 import com.aem.play.core.models.BlogBreadcrumbModel;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.aem.play.core.models.BreadcrumbItem;
+import io.wcm.testing.mock.aem.junit5.AemContext;
+import io.wcm.testing.mock.aem.junit5.AemContextExtension;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-import javax.annotation.PostConstruct;
+import static org.junit.jupiter.api.Assertions.*;
 
-import org.apache.sling.api.SlingHttpServletRequest;
-import org.apache.sling.models.annotations.DefaultInjectionStrategy;
-import org.apache.sling.models.annotations.Exporter;
-import org.apache.sling.models.annotations.Model;
-import org.apache.sling.models.annotations.injectorspecific.ScriptVariable;
+@ExtendWith(AemContextExtension.class)
+class BlogBreadcrumbModelImplTest {
 
-import com.day.cq.wcm.api.Page;
-import com.adobe.cq.wcm.core.components.commons.link.LinkManager;
-import com.adobe.cq.wcm.core.components.commons.link.Link;
-import com.aem.play.core.models.BreadcrumbItem;
-import com.zendesk.core.models.v1.impl.NavigationItemModelImpl;
+    private final AemContext context = new AemContext();
 
-/**
- * Breadcrumb Component using NavigationItemModelImpl.
- */
-@Model(
-        adaptables = {SlingHttpServletRequest.class},
-        adapters = {BlogBreadcrumbModel.class, ComponentExporter.class},
-        resourceType = {BlogBreadcrumbModelImpl.RESOURCE_TYPE},
-        defaultInjectionStrategy = DefaultInjectionStrategy.OPTIONAL
-)
-@Exporter(
-        name = ExporterConstants.SLING_MODEL_EXPORTER_NAME,
-        extensions = ExporterConstants.SLING_MODEL_EXTENSION
-)
-@JsonSerialize(as = BlogBreadcrumbModelImpl.class)
-public class BlogBreadcrumbModelImpl implements BlogBreadcrumbModel {
+    @BeforeEach
+    void setup() {
+        context.addModelsForClasses(BlogBreadcrumbModelImpl.class);
 
-    public static final String RESOURCE_TYPE =
-            "aem-play/components/blogbreadcrumb";
-
-    @ScriptVariable
-    private Page currentPage;
-
-    @ScriptVariable
-    private LinkManager linkManager;
-
-    private List<NavigationItemModelImpl> breadcrumbItems;
-
-    private static final List<String> ALLOWED_TEMPLATES = List.of(
-            "/conf/aem-play/settings/wcm/templates/blogdetail",
-            "/conf/aem-play/settings/wcm/templates/blog-category",
-            "/conf/aem-play/settings/wcm/templates/blog-landing"
-    );
-
-    @PostConstruct
-    protected void init() {
-
-        breadcrumbItems = new ArrayList<>();
-
-        if (currentPage == null) {
-            return;
-        }
-
-        String currentTemplate =
-                currentPage.getProperties().get("cq:template", String.class);
-
-        if (currentTemplate == null || !ALLOWED_TEMPLATES.contains(currentTemplate)) {
-            return; // Not blog template → return empty
-        }
-
-        Page page = currentPage;
-
-        while (page != null && page.getPath().startsWith("/content/aem-play")) {
-
-            String template = page.getProperties().get("cq:template", String.class);
-
-            if (template != null && ALLOWED_TEMPLATES.contains(template)) {
-
-                NavigationItemModelImpl navItem =
-                        new NavigationItemModelImpl(
-                                page,
-                                currentPage.getPath().equals(page.getPath()),
-                                linkManager,
-                                List.of()
-                        );
-
-                breadcrumbItems.add(navItem);
-            }
-
-            page = page.getParent();
-        }
-
-        Collections.reverse(breadcrumbItems);
+        // Load updated JSON
+        context.load().json("/blogBreadcrumbTest.json",
+                "/content/zendesk/amer/en_us/test/jcr:content/root/blogbreadcrumb");
     }
 
+    @Test
+    void testValidBreadcrumb() {
 
-    /**
-     * Return breadcrumb items coming directly from NavigationItemModelImpl.
-     */
-    public List<NavigationItemModelImpl> getBreadcrumbItems() {
-        return breadcrumbItems;
+        context.currentResource(
+                "/content/zendesk/amer/en_us/test/jcr:content/root/blogbreadcrumb"
+        );
+
+        BlogBreadcrumbModel model =
+                context.request().adaptTo(BlogBreadcrumbModel.class);
+
+        assertNotNull(model);
+
+        List<BreadcrumbItem> items = model.getBreadcrumbItems();
+        assertEquals(4, items.size());
+
+        // Item 1
+        assertEquals("test", items.get(0).getTitle());
+        assertEquals("/content/zendesk/amer/en_us/test.html", items.get(0).getLink());
+
+        // Item 2
+        assertEquals("bc-child", items.get(1).getTitle());
+        assertEquals("/content/zendesk/amer/en_us/test/bc-child.html", items.get(1).getLink());
+
+        // Item 3
+        assertEquals("bl-child", items.get(2).getTitle());
+        assertEquals("/content/zendesk/amer/en_us/test/bc-child/bl-child.html", items.get(2).getLink());
+
+        // Item 4
+        assertEquals("bd-child2", items.get(3).getTitle());
+        assertEquals("/content/zendesk/amer/en_us/test/bc-child/bl-child/bp-child/bd-child2.html",
+                     items.get(3).getLink());
     }
 
-    @JsonProperty(value = ":type")
-    public String getExportedType() {
-        return RESOURCE_TYPE;
+    @Test
+    void testExportedType() {
+
+        context.currentResource(
+                "/content/zendesk/amer/en_us/test/jcr:content/root/blogbreadcrumb"
+        );
+
+        BlogBreadcrumbModelImpl model =
+                context.request().adaptTo(BlogBreadcrumbModelImpl.class);
+
+        assertNotNull(model);
+        assertEquals("zendesk/components/blogbreadcrumb/v1/blogbreadcrumb",
+                     model.getExportedType());
+    }
+
+    @Test
+    void testNullCurrentPageHandled() {
+        BlogBreadcrumbModelImpl model = new BlogBreadcrumbModelImpl();
+        assertNull(model.getBreadcrumbItems());
     }
 }
