@@ -1,22 +1,64 @@
- @Self
-    private SlingHttpServletRequest request;
+package com.aem.play.core.models.impl;
 
-    private LinkManager linkManager;
+import com.adobe.cq.export.json.ComponentExporter;
+import com.adobe.cq.export.json.ExporterConstants;
+import com.aem.play.core.models.BlogBreadcrumbModel;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-    private List<BreadcrumbItem> breadcrumbItems;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
+import javax.annotation.PostConstruct;
+
+import org.apache.sling.api.SlingHttpServletRequest;
+import org.apache.sling.models.annotations.DefaultInjectionStrategy;
+import org.apache.sling.models.annotations.Exporter;
+import org.apache.sling.models.annotations.Model;
+import org.apache.sling.models.annotations.injectorspecific.ScriptVariable;
+
+import com.day.cq.wcm.api.Page;
+import com.adobe.cq.wcm.core.components.commons.link.LinkManager;
+import com.adobe.cq.wcm.core.components.commons.link.Link;
+import com.aem.play.core.models.BreadcrumbItem;
+import com.zendesk.core.models.v1.impl.NavigationItemModelImpl;
+
+/**
+ * Breadcrumb Component using NavigationItemModelImpl.
+ */
+@Model(
+        adaptables = {SlingHttpServletRequest.class},
+        adapters = {BlogBreadcrumbModel.class, ComponentExporter.class},
+        resourceType = {BlogBreadcrumbModelImpl.RESOURCE_TYPE},
+        defaultInjectionStrategy = DefaultInjectionStrategy.OPTIONAL
+)
+@Exporter(
+        name = ExporterConstants.SLING_MODEL_EXPORTER_NAME,
+        extensions = ExporterConstants.SLING_MODEL_EXTENSION
+)
+@JsonSerialize(as = BlogBreadcrumbModelImpl.class)
+public class BlogBreadcrumbModelImpl implements BlogBreadcrumbModel {
+
+    public static final String RESOURCE_TYPE =
+            "aem-play/components/blogbreadcrumb";
+
+    @ScriptVariable
     private Page currentPage;
 
+    @ScriptVariable
+    private LinkManager linkManager;
+
+    private List<NavigationItemModelImpl> breadcrumbItems;
+
     private static final List<String> ALLOWED_TEMPLATES = List.of(
-            "/conf/aem-play/settings/wcm/templates/page-content/page"
+            "/conf/aem-play/settings/wcm/templates/blogdetail",
+            "/conf/aem-play/settings/wcm/templates/blog-category",
+            "/conf/aem-play/settings/wcm/templates/blog-landing"
     );
 
-    /**
-     * Initializes breadcrumb items for the current page.
-     */
     @PostConstruct
     protected void init() {
-        linkManager = request.adaptTo(LinkManager.class);
 
         breadcrumbItems = new ArrayList<>();
 
@@ -24,25 +66,30 @@
             return;
         }
 
-        String currentTemplate = currentPage.getProperties().get("cq:template", String.class);
+        String currentTemplate =
+                currentPage.getProperties().get("cq:template", String.class);
+
         if (currentTemplate == null || !ALLOWED_TEMPLATES.contains(currentTemplate)) {
-            return;
+            return; // Not blog template → return empty
         }
 
         Page page = currentPage;
+
         while (page != null && page.getPath().startsWith("/content/aem-play")) {
 
             String template = page.getProperties().get("cq:template", String.class);
+
             if (template != null && ALLOWED_TEMPLATES.contains(template)) {
 
-                NavigationItemModel navItem = new NavigationItemModelImpl(page, page.equals(currentPage),
-                        linkManager, Collections.emptyList());
+                NavigationItemModelImpl navItem =
+                        new NavigationItemModelImpl(
+                                page,
+                                currentPage.getPath().equals(page.getPath()),
+                                linkManager,
+                                List.of()
+                        );
 
-                String title = Optional.ofNullable(navItem.getTitle()).orElse(page.getName());
-                Link<Page> link = navItem.getLink();
-                String url = (link != null && link.getURL() != null) ? link.getURL() : page.getPath();
-
-                breadcrumbItems.add(new BreadcrumbItem(title, url));
+                breadcrumbItems.add(navItem);
             }
 
             page = page.getParent();
@@ -51,12 +98,16 @@
         Collections.reverse(breadcrumbItems);
     }
 
+
     /**
-     * Returns the list of breadcrumb items.
-     *
-     * @return breadcrumb items
+     * Return breadcrumb items coming directly from NavigationItemModelImpl.
      */
-    public List<BreadcrumbItem> getBreadcrumbItems() {
+    public List<NavigationItemModelImpl> getBreadcrumbItems() {
         return breadcrumbItems;
+    }
+
+    @JsonProperty(value = ":type")
+    public String getExportedType() {
+        return RESOURCE_TYPE;
     }
 }
