@@ -1,12 +1,36 @@
-"blogbreadcrumb": {
-    "breadcrumbItems": [
-        { "title": "test", "link": "/content/zendesk/amer/en_us/test.html" },
-        { "title": "bc-child", "link": "/content/zendesk/amer/en_us/test/bc-child.html" },
-        { "title": "bl-child", "link": "/content/zendesk/amer/en_us/test/bc-child/bl-child.html" },
-        { "title": "bd-child2", "link": "/content/zendesk/amer/en_us/test/bc-child/bl-child/bp-child/bd-child2.html" }
-    ],
-    "type": "zendesk/components/blogbreadcrumb/v1/blogbreadcrumb"
+{
+  "content": {
+    "aem-play": {
+      "us": {
+        "en": {
+          "blog1": {
+            "jcr:content": {
+              "cq:template": "/conf/aem-play/settings/wcm/templates/blogdetail",
+              "root": {
+                "breadcrumb": {
+                  "sling:resourceType": "aem-play/components/blogbreadcrumb"
+                }
+              }
+            },
+            "a": {
+              "jcr:content": {
+                "cq:template": "/conf/aem-play/settings/wcm/templates/blogdetail",
+                "jcr:title": "Child A"
+              },
+              "b": {
+                "jcr:content": {
+                  "cq:template": "/conf/aem-play/settings/wcm/templates/blogdetail",
+                  "jcr:title": "Child B"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }
+
 
 
 package com.aem.play.core.models.impl;
