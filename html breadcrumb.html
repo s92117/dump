@@ -121,12 +121,13 @@ public class BlogBreadcrumbModelImpl implements BlogBreadcrumbModel {
 
 <nav class="blog-breadcrumb" aria-label="Breadcrumb">
     <sly data-sly-list.item="${model.breadcrumbItems}">
-        <a href="${item.url}">${item.title}</a>
+        <a href="${item.URL}">${item.title}</a>
         <sly data-sly-test="${!itemList.last}"> &gt; </sly>
     </sly>
 </nav>
 
 </sly>
+
 
 
         
