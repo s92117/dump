@@ -73,15 +73,18 @@ public class BlogBreadcrumbModelImpl implements BlogBreadcrumbModel {
         Page page = currentPage;
 
         while (page != null) {
-            String templatePath = page.getTemplate() != null ? page.getTemplate().getPath() : null;
+            String template = page.getTemplate() != null ? page.getTemplate().getPath() : null;
 
-            if (templatePath != null && ALLOWED_TEMPLATES.contains(templatePath)) {
-                // Use existing NavigationItemModelImpl for link generation
-                NavigationItem navItem = new NavigationItemModelImpl(
+            if (template != null && ALLOWED_TEMPLATES.contains(template)) {
+
+                // IMPORTANT: build link using AEM LinkManager
+                Link<Page> link = linkManager.get(page).build();
+
+                NavigationItemImpl navItem = new NavigationItemImpl(
                         page,
-                        currentPage.equals(page),
-                        linkManager,
-                        Collections.emptyList()
+                        link,                      // <-- THIS POPULATES URL
+                        currentPage.equals(page),  // active state
+                        Collections.emptyList()    // no children
                 );
 
                 breadcrumbItems.add(navItem);
