@@ -1,0 +1,113 @@
+package com.aem.play.core.models.impl;
+
+import com.aem.play.core.models.BlogBreadcrumbModel;
+import com.adobe.cq.export.json.ComponentExporter;
+import com.adobe.cq.export.json.ExporterConstants;
+import com.adobe.cq.wcm.core.components.commons.link.LinkManager;
+import com.adobe.cq.wcm.core.components.models.NavigationItem;
+import com.day.cq.wcm.api.Page;
+import org.apache.sling.api.SlingHttpServletRequest;
+import org.apache.sling.models.annotations.*;
+import org.apache.sling.models.annotations.injectorspecific.ScriptVariable;
+import org.apache.sling.models.annotations.injectorspecific.Self;
+
+import javax.annotation.PostConstruct;
+import java.util.*;
+
+/**
+ * Implementation of BlogBreadcrumb component.
+ * Builds breadcrumb navigation using NavigationItem objects.
+ */
+@Model(
+        adaptables = SlingHttpServletRequest.class,
+        adapters = { BlogBreadcrumbModel.class, ComponentExporter.class },
+        resourceType = BlogBreadcrumbModelImpl.RESOURCE_TYPE,
+        defaultInjectionStrategy = DefaultInjectionStrategy.OPTIONAL
+)
+@Exporter(
+        name = ExporterConstants.SLING_MODEL_EXPORTER_NAME,
+        extensions = ExporterConstants.SLING_MODEL_EXTENSION
+)
+public class BlogBreadcrumbModelImpl implements BlogBreadcrumbModel {
+
+    /**
+     * Resource type of the component.
+     */
+    public static final String RESOURCE_TYPE = "aem-play/components/blogbreadcrumb";
+
+    /**
+     * Allowed templates for breadcrumb pages.
+     */
+    private static final Set<String> ALLOWED_TEMPLATES = Set.of(
+            "/conf/aem-play/settings/wcm/templates/blogdetail",
+            "/conf/aem-play/settings/wcm/templates/blog-category",
+            "/conf/aem-play/settings/wcm/templates/blog-landing"
+    );
+
+    /**
+     * Current page reference injected by Sling.
+     */
+    @ScriptVariable
+    private Page currentPage;
+
+    /**
+     * Link manager for building NavigationItem links.
+     */
+    @Self
+    private LinkManager linkManager;
+
+    /**
+     * List of breadcrumb navigation items.
+     */
+    private List<NavigationItem> breadcrumbItems = new ArrayList<>();
+
+    /**
+     * Initialize the breadcrumb items list.
+     */
+    @PostConstruct
+    protected void init() {
+
+        Page page = currentPage;
+
+        while (page != null) {
+
+            String templatePath = page.getTemplate() != null ? page.getTemplate().getPath() : null;
+
+            if (templatePath != null && ALLOWED_TEMPLATES.contains(templatePath)) {
+
+                NavigationItem navItem = new NavigationItemModelImpl(
+                        page,
+                        currentPage.equals(page),
+                        linkManager,
+                        Collections.emptyList()
+                );
+
+                breadcrumbItems.add(navItem);
+            }
+
+            page = page.getParent();
+        }
+
+        Collections.reverse(breadcrumbItems);
+    }
+
+    /**
+     * Returns the list of breadcrumb NavigationItems.
+     *
+     * @return list of NavigationItem objects
+     */
+    @Override
+    public List<NavigationItem> getBreadcrumbItems() {
+        return breadcrumbItems;
+    }
+
+    /**
+     * Returns the exported type for SPA editor.
+     *
+     * @return resource type
+     */
+    @Override
+    public String getExportedType() {
+        return RESOURCE_TYPE;
+    }
+}
