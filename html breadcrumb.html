@@ -1,0 +1,14 @@
+<sly data-sly-use.model="com.aem.play.core.models.BlogBreadcrumbModel">
+
+    <nav class="blog-breadcrumb" aria-label="Breadcrumb">
+        <ol>
+            <sly data-sly-list.item="${model.breadcrumbItems}">
+                <li>
+                    <a href="${item.link.url}">${item.title}</a>
+                    <sly data-sly-test="${!itemList.last}"> &gt; </sly>
+                </li>
+            </sly>
+        </ol>
+    </nav>
+
+</sly>
