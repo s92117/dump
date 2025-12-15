@@ -4,40 +4,44 @@ import java.util.List;
 
 import com.adobe.cq.export.json.ComponentExporter;
 
+/**
+ * Sling model interface for Share Social component.
+ * Exposes page metadata and author-configured social networks.
+ */
 public interface ShareSocialModel extends ComponentExporter {
 
     /**
-     * Returns enabled social networks.
+     * Returns the configured social networks.
      *
-     * @return list of social networks
+     * @return list of social network keys
      */
     List<String> getSocialNetworks();
 
     /**
-     * Returns current page URL.
+     * Returns the current page URL.
      *
      * @return page URL
      */
     String getPageUrl();
 
     /**
-     * Returns page title.
+     * Returns the current page title.
      *
      * @return page title
      */
     String getPageTitle();
 
     /**
-     * Returns page description.
+     * Returns the current page description.
      *
      * @return page description
      */
     String getPageDescription();
 
     /**
-     * Returns share image URL if available.
+     * Returns the share image URL if available.
      *
-     * @return image URL
+     * @return share image URL or empty string
      */
     String getShareImage();
 }
@@ -68,8 +72,8 @@ import org.apache.sling.models.annotations.injectorspecific.Self;
 import org.apache.sling.models.annotations.injectorspecific.ValueMapValue;
 
 /**
- * Share Social Sling Model.
- * Exposes page metadata and author-configured networks to HTL.
+ * Implementation of Share Social component.
+ * Provides page metadata and author-selected social networks to HTL.
  */
 @Model(
         adaptables = SlingHttpServletRequest.class,
@@ -95,7 +99,7 @@ public class ShareSocialModelImpl implements ShareSocialModel {
     private Page currentPage;
 
     /**
-     * Link manager.
+     * Link manager used to build page URL.
      */
     @Self
     private LinkManager linkManager;
@@ -111,6 +115,9 @@ public class ShareSocialModelImpl implements ShareSocialModel {
     private String pageDescription;
     private String shareImage;
 
+    /**
+     * Initializes page metadata.
+     */
     @PostConstruct
     protected void init() {
         if (currentPage == null) {
@@ -120,35 +127,52 @@ public class ShareSocialModelImpl implements ShareSocialModel {
         pageUrl = linkManager.get(currentPage).build().getURL();
         pageTitle = currentPage.getTitle();
         pageDescription = currentPage.getDescription();
-
         shareImage = currentPage.getProperties().get("og:image", String.class);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<String> getSocialNetworks() {
         return socialNetworks != null ? socialNetworks : Collections.emptyList();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String getPageUrl() {
         return pageUrl;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String getPageTitle() {
         return pageTitle;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String getPageDescription() {
         return pageDescription;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String getShareImage() {
         return StringUtils.defaultString(shareImage);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String getExportedType() {
         return RESOURCE_TYPE;
@@ -156,29 +180,33 @@ public class ShareSocialModelImpl implements ShareSocialModel {
 }
 
 
+
 ------------------------
 
 <sly data-sly-use.model="com.aem.play.core.models.ShareSocialModel" />
 
-<div class="blog-hero__share"
+<div class="blog-hero__social-share"
      data-page-url="${model.pageUrl}"
-     data-title="${model.pageTitle}"
-     data-description="${model.pageDescription}"
-     data-image="${model.shareImage}">
+     data-page-title="${model.pageTitle}"
+     data-page-description="${model.pageDescription}"
+     data-page-image="${model.shareImage}">
 
-    <ul class="share-social">
+    <ul class="social-share"
+        role="list"
+        aria-label="Share this article">
+
         <sly data-sly-list.network="${model.socialNetworks}">
-            <li>
-                <a href="#"
-                   class="share-social__link"
-                   data-network="${network}"
-                   aria-label="Share on ${network}"
-                   rel="noopener noreferrer"
-                   target="_blank">
-                    <span class="icon icon-${network}"></span>
-                </a>
+            <li class="social-share__item">
+                <button type="button"
+                        class="social-share__button social-share__button--${network}"
+                        data-network="${network}"
+                        aria-label="Share on ${network}">
+                    <span class="icon icon-${network}" aria-hidden="true"></span>
+                </button>
             </li>
         </sly>
+
     </ul>
 </div>
+
 
