@@ -1,0 +1,184 @@
+package com.aem.play.core.models;
+
+import java.util.List;
+
+import com.adobe.cq.export.json.ComponentExporter;
+
+public interface ShareSocialModel extends ComponentExporter {
+
+    /**
+     * Returns enabled social networks.
+     *
+     * @return list of social networks
+     */
+    List<String> getSocialNetworks();
+
+    /**
+     * Returns current page URL.
+     *
+     * @return page URL
+     */
+    String getPageUrl();
+
+    /**
+     * Returns page title.
+     *
+     * @return page title
+     */
+    String getPageTitle();
+
+    /**
+     * Returns page description.
+     *
+     * @return page description
+     */
+    String getPageDescription();
+
+    /**
+     * Returns share image URL if available.
+     *
+     * @return image URL
+     */
+    String getShareImage();
+}
+
+
+------------------------
+
+package com.aem.play.core.models.impl;
+
+import java.util.Collections;
+import java.util.List;
+
+import javax.annotation.PostConstruct;
+
+import com.aem.play.core.models.ShareSocialModel;
+import com.adobe.cq.export.json.ComponentExporter;
+import com.adobe.cq.export.json.ExporterConstants;
+import com.adobe.cq.wcm.core.components.commons.link.LinkManager;
+import com.day.cq.wcm.api.Page;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.sling.api.SlingHttpServletRequest;
+import org.apache.sling.models.annotations.DefaultInjectionStrategy;
+import org.apache.sling.models.annotations.Exporter;
+import org.apache.sling.models.annotations.Model;
+import org.apache.sling.models.annotations.injectorspecific.ScriptVariable;
+import org.apache.sling.models.annotations.injectorspecific.Self;
+import org.apache.sling.models.annotations.injectorspecific.ValueMapValue;
+
+/**
+ * Share Social Sling Model.
+ * Exposes page metadata and author-configured networks to HTL.
+ */
+@Model(
+        adaptables = SlingHttpServletRequest.class,
+        adapters = { ShareSocialModel.class, ComponentExporter.class },
+        resourceType = ShareSocialModelImpl.RESOURCE_TYPE,
+        defaultInjectionStrategy = DefaultInjectionStrategy.OPTIONAL
+)
+@Exporter(
+        name = ExporterConstants.SLING_MODEL_EXPORTER_NAME,
+        extensions = ExporterConstants.SLING_MODEL_EXTENSION
+)
+public class ShareSocialModelImpl implements ShareSocialModel {
+
+    /**
+     * Component resource type.
+     */
+    public static final String RESOURCE_TYPE = "aem-play/components/share-social";
+
+    /**
+     * Current page.
+     */
+    @ScriptVariable
+    private Page currentPage;
+
+    /**
+     * Link manager.
+     */
+    @Self
+    private LinkManager linkManager;
+
+    /**
+     * Author-selected social networks.
+     */
+    @ValueMapValue
+    private List<String> socialNetworks;
+
+    private String pageUrl;
+    private String pageTitle;
+    private String pageDescription;
+    private String shareImage;
+
+    @PostConstruct
+    protected void init() {
+        if (currentPage == null) {
+            return;
+        }
+
+        pageUrl = linkManager.get(currentPage).build().getURL();
+        pageTitle = currentPage.getTitle();
+        pageDescription = currentPage.getDescription();
+
+        shareImage = currentPage.getProperties().get("og:image", String.class);
+    }
+
+    @Override
+    public List<String> getSocialNetworks() {
+        return socialNetworks != null ? socialNetworks : Collections.emptyList();
+    }
+
+    @Override
+    public String getPageUrl() {
+        return pageUrl;
+    }
+
+    @Override
+    public String getPageTitle() {
+        return pageTitle;
+    }
+
+    @Override
+    public String getPageDescription() {
+        return pageDescription;
+    }
+
+    @Override
+    public String getShareImage() {
+        return StringUtils.defaultString(shareImage);
+    }
+
+    @Override
+    public String getExportedType() {
+        return RESOURCE_TYPE;
+    }
+}
+
+
+------------------------
+
+<sly data-sly-use.model="com.aem.play.core.models.ShareSocialModel" />
+
+<div class="blog-hero__share"
+     data-page-url="${model.pageUrl}"
+     data-title="${model.pageTitle}"
+     data-description="${model.pageDescription}"
+     data-image="${model.shareImage}">
+
+    <ul class="share-social">
+        <sly data-sly-list.network="${model.socialNetworks}">
+            <li>
+                <a href="#"
+                   class="share-social__link"
+                   data-network="${network}"
+                   aria-label="Share on ${network}"
+                   rel="noopener noreferrer"
+                   target="_blank">
+                    <span class="icon icon-${network}"></span>
+                </a>
+            </li>
+        </sly>
+    </ul>
+</div>
+
