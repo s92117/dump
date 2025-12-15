@@ -171,4 +171,21 @@ public class ShareSocialModelImpl implements ShareSocialModel {
 }
 
 
+--------------
+<sly data-sly-use.model="com.aem.play.core.models.ShareSocialModel">
+
+<div class="share-social" aria-label="Share this article">
+    <sly data-sly-list.item="${model.socialItems}">
+        <a
+            href="${item.link.URL}"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Share article">
+        </a>
+    </sly>
+</div>
+
+</sly>
+
+
 
