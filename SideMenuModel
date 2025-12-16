@@ -201,3 +201,32 @@ public class SideMenuModelImpl implements SideMenuModel {
         </ul>
     </nav>
 </sly>
+
+
+
+
+----------------
+
+<sly data-sly-use.sideMenu="com.aem.play.core.models.SideMenuModel"/>
+
+<nav class="side-menu" data-sly-test="${sideMenu.root}">
+    <ul class="side-menu__list">
+
+        <!-- Root item -->
+        <li class="side-menu__item ${sideMenu.root.current ? 'is-active' : ''}">
+            <a href="${sideMenu.root.link.url}">
+                ${sideMenu.root.title}
+            </a>
+        </li>
+
+        <!-- Children -->
+        <li data-sly-list.child="${sideMenu.root.children}"
+            class="side-menu__item ${child.current ? 'is-active' : ''}">
+            <a href="${child.link.url}">
+                ${child.title}
+            </a>
+        </li>
+
+    </ul>
+</nav>
+
