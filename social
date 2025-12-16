@@ -183,172 +183,21 @@ public class ShareSocialModelImpl implements ShareSocialModel {
 
 ------------------------
 
-<sly data-sly-use.model="com.aem.play.core.models.ShareSocialModel" />
-
-<div class="blog-hero__social-share"
-     data-page-url="${model.pageUrl}"
-     data-page-title="${model.pageTitle}"
-     data-page-description="${model.pageDescription}"
-     data-page-image="${model.shareImage}">
-
-    <ul class="social-share"
-        role="list"
-        aria-label="Share this article">
-
-        <sly data-sly-list.network="${model.socialNetworks}">
-            <li class="social-share__item">
-                <button type="button"
-                        class="social-share__button social-share__button--${network}"
-                        data-network="${network}"
-                        aria-label="Share on ${network}">
-                    <span class="icon icon-${network}" aria-hidden="true"></span>
-                </button>
-            </li>
-        </sly>
-
-    </ul>
-</div>
-
---------------------
-
-<sly data-sly-use.model="com.aem.play.core.models.ShareSocialModel" />
-
-<div class="blog-hero__social-share"
-     data-page-url="${model.pageUrl}"
-     data-page-title="${model.pageTitle}"
-     data-page-description="${model.pageDescription}"
-     data-page-image="${model.shareImage}">
-
-    <div class="social-share-horizontal" role="list" aria-label="Share this article">
-
-        <sly data-sly-list.network="${model.socialNetworks}">
-            <button type="button"
-                    class="social-share__button social-share__button--${network}"
-                    data-network="${network}"
-                    aria-label="Share on ${network}">
-                <span class="icon icon-${network}" aria-hidden="true"></span>
-            </button>
-        </sly>
-
-    </div>
-</div>
-
--------
 <sly data-sly-use.model="com.aem.play.core.models.SideMenuModel" />
 
 <sly data-sly-test="${model.root}">
     <nav class="side-menu">
         <ul class="side-menu__list">
 
-            <!-- Root item -->
-            <li class="side-menu__item side-menu__item--root ${model.root.current ? 'is-active' : ''}">
-                <a href="${model.root.Link.url}">${model.root.title}</a>
-            </li>
-
-            <!-- Child items -->
-            <sly data-sly-list.child="${model.root.children}">
-                <li class="side-menu__item ${child.current ? 'is-active' : ''}">
-                    <a href="${child.Link.url}">${child.title}</a>
-
-                    <!-- Optional: render grandchildren if they exist -->
-                    <sly data-sly-list.grandchild="${child.children}">
-                        <ul class="side-menu__sublist">
-                            <li class="side-menu__subitem ${grandchild.current ? 'is-active' : ''}">
-                                <a href="${grandchild.Link.url}">${grandchild.title}</a>
-                            </li>
-                        </ul>
-                    </sly>
-                </li>
-            </sly>
-
-        </ul>
-    </nav>
-</sly>
-
-=======
-<sly data-sly-use.model="com.aem.play.core.models.SideMenuModel" />
-
-<!-- Debug output -->
-<div style="background:#f5f5f5; padding:10px; border:1px solid #ccc; margin-bottom:10px;">
-    <strong>DEBUG: SideMenuModel</strong><br/>
-    Model object: ${model}<br/>
-    Root object: ${model.root}<br/>
-    Root title: ${model.root.title}<br/>
-    Root link: ${model.root.Link.url}<br/>
-    Number of children: ${model.root.children?size}<br/>
-</div>
-
-<sly data-sly-test="${model.root}">
-    <nav class="side-menu">
-        <ul class="side-menu__list">
-
-            <!-- Root item -->
-            <li class="side-menu__item side-menu__item--root ${model.root.current ? 'is-active' : ''}">
-                <a href="${model.root.Link.url}">${model.root.title}</a>
-            </li>
-
-            <!-- Child items -->
-            <sly data-sly-list.child="${model.root.children}">
-                <li class="side-menu__item ${child.current ? 'is-active' : ''}">
-                    <a href="${child.Link.url}">${child.title}</a>
-
-                    <!-- Optional: grandchildren -->
-                    <sly data-sly-list.grandchild="${child.children}">
-                        <ul class="side-menu__sublist">
-                            <li class="side-menu__subitem ${grandchild.current ? 'is-active' : ''}">
-                                <a href="${grandchild.Link.url}">${grandchild.title}</a>
-                            </li>
-                        </ul>
-                    </sly>
-                </li>
-            </sly>
-
-        </ul>
-    </nav>
-</sly>
-
-<!-- Fallback if no root -->
-<sly data-sly-test="${!model.root}">
-    <div style="color:red; font-weight:bold;">
-        DEBUG: model.root is null or not initialized!
-    </div>
-</sly>
-
-
-========
-
-<sly data-sly-use.model="com.aem.play.core.models.SideMenuModel" />
-
-<!-- DEBUG BLOCK -->
-<div style="border:2px dashed red; padding:10px; margin-bottom:10px;">
-    <strong>DEBUG Side Menu</strong><br/>
-
-    Model exists: ${model ? 'YES' : 'NO'}<br/>
-    Root exists: ${model.root ? 'YES' : 'NO'}<br/>
-
-    <sly data-sly-test="${model.root}">
-        Root title: ${model.root.title}<br/>
-        Root current: ${model.root.current}<br/>
-        Root URL: ${model.root.Link.url}<br/>
-        Children count: ${model.root.children @ size}<br/>
-    </sly>
-</div>
-
-<sly data-sly-test="${model.root}">
-    <nav class="side-menu">
-        <ul class="side-menu__list">
-
-            <!-- Root -->
             <li class="side-menu__item ${model.root.current ? 'is-active' : ''}">
-                <a href="${model.root.Link.url}">
+                <a href="${model.root.Link.URL}">
                     ${model.root.title}
                 </a>
             </li>
 
-            <!-- Children -->
             <sly data-sly-list.child="${model.root.children}">
                 <li class="side-menu__item ${child.current ? 'is-active' : ''}">
-                    <a href="${child.Link.url}">
+                    <a href="${child.Link.URL}">
                         ${child.title}
                     </a>
                 </li>
@@ -356,12 +205,6 @@ public class ShareSocialModelImpl implements ShareSocialModel {
 
         </ul>
     </nav>
-</sly>
-
-<sly data-sly-test="${!model.root}">
-    <div style="color:red; font-weight:bold;">
-        DEBUG: model.root is NULL
-    </div>
 </sly>
 
 
