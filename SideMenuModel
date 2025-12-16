@@ -1,0 +1,203 @@
+package com.aem.play.core.models;
+
+import com.adobe.cq.export.json.ComponentExporter;
+import com.adobe.cq.wcm.core.components.models.NavigationItem;
+
+/**
+ * Sling Model interface for Side Menu component.
+ * Provides a single navigation root with children.
+ */
+public interface SideMenuModel extends ComponentExporter {
+
+    /**
+     * Returns the root navigation item.
+     *
+     * @return root NavigationItem or null
+     */
+    NavigationItem getRoot();
+}
+
+
+package com.aem.play.core.models.impl;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import javax.annotation.PostConstruct;
+
+import com.aem.play.core.models.SideMenuModel;
+import com.adobe.cq.export.json.ComponentExporter;
+import com.adobe.cq.export.json.ExporterConstants;
+import com.adobe.cq.wcm.core.components.commons.link.LinkManager;
+import com.adobe.cq.wcm.core.components.models.NavigationItem;
+import com.day.cq.wcm.api.Page;
+
+import org.apache.sling.api.SlingHttpServletRequest;
+import org.apache.sling.models.annotations.DefaultInjectionStrategy;
+import org.apache.sling.models.annotations.Exporter;
+import org.apache.sling.models.annotations.Model;
+import org.apache.sling.models.annotations.injectorspecific.ScriptVariable;
+import org.apache.sling.models.annotations.injectorspecific.Self;
+
+/**
+ * Sling Model implementation for Side Menu component.
+ * Builds navigation based on Blog Detail page hierarchy.
+ */
+@Model(
+        adaptables = SlingHttpServletRequest.class,
+        adapters = { SideMenuModel.class, ComponentExporter.class },
+        resourceType = SideMenuModelImpl.RESOURCE_TYPE,
+        defaultInjectionStrategy = DefaultInjectionStrategy.OPTIONAL
+)
+@Exporter(
+        name = ExporterConstants.SLING_MODEL_EXPORTER_NAME,
+        extensions = ExporterConstants.SLING_MODEL_EXTENSION
+)
+public class SideMenuModelImpl implements SideMenuModel {
+
+    /**
+     * Component resource type.
+     */
+    public static final String RESOURCE_TYPE = "aem-play/components/sidemenu";
+
+    /**
+     * Blog Detail template path.
+     */
+    private static final String BLOG_DETAIL_TEMPLATE =
+            "/conf/aem-play/settings/wcm/templates/blogdetail";
+
+    /**
+     * Current page.
+     */
+    @ScriptVariable
+    private Page currentPage;
+
+    /**
+     * Link manager.
+     */
+    @Self
+    private LinkManager linkManager;
+
+    /**
+     * Root navigation item.
+     */
+    private NavigationItem root;
+
+    /**
+     * Initializes the side menu structure.
+     */
+    @PostConstruct
+    protected void init() {
+
+        if (!isBlogDetail(currentPage)) {
+            return;
+        }
+
+        Page rootPage = hasBlogDetailChildren(currentPage)
+                ? currentPage
+                : currentPage.getParent();
+
+        if (rootPage == null || !isBlogDetail(rootPage)) {
+            return;
+        }
+
+        List<NavigationItem> children = new ArrayList<>();
+
+        for (Page child : rootPage.listChildren()) {
+            if (isBlogDetail(child) && !child.isHideInNav()) {
+                children.add(
+                        new NavigationItemModelImpl(
+                                child,
+                                currentPage.equals(child),
+                                linkManager,
+                                Collections.emptyList()
+                        )
+                );
+            }
+        }
+
+        root = new NavigationItemModelImpl(
+                rootPage,
+                currentPage.equals(rootPage),
+                linkManager,
+                children
+        );
+    }
+
+    /**
+     * Returns the root navigation item.
+     *
+     * @return root NavigationItem
+     */
+    @Override
+    public NavigationItem getRoot() {
+        return root;
+    }
+
+    /**
+     * Returns the exported resource type.
+     *
+     * @return resource type
+     */
+    @Override
+    public String getExportedType() {
+        return RESOURCE_TYPE;
+    }
+
+    /**
+     * Checks whether the page is a Blog Detail page.
+     *
+     * @param page page to check
+     * @return true if Blog Detail template
+     */
+    private boolean isBlogDetail(final Page page) {
+        return page != null
+                && page.getTemplate() != null
+                && BLOG_DETAIL_TEMPLATE.equals(page.getTemplate().getPath());
+    }
+
+    /**
+     * Checks if the page has Blog Detail children.
+     *
+     * @param page page to check
+     * @return true if any child is Blog Detail
+     */
+    private boolean hasBlogDetailChildren(final Page page) {
+        for (Page child : page.listChildren()) {
+            if (isBlogDetail(child)) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
+
+<sly data-sly-use.model="com.aem.play.core.models.SideMenuModel" />
+
+<sly data-sly-test="${model.root}">
+    <nav class="side-menu">
+        <ul class="side-menu__list">
+
+            <!-- Root item -->
+            <li class="side-menu__item side-menu__item--root
+                ${model.root.current ? 'is-active' : ''}">
+                <a href="${model.root.link.url}">
+                    ${model.root.title}
+                </a>
+            </li>
+
+            <!-- Child items -->
+            <sly data-sly-list.child="${model.root.children}">
+                <li class="side-menu__item
+                    ${child.current ? 'is-active' : ''}">
+                    <a href="${child.link.url}">
+                        ${child.title}
+                    </a>
+                </li>
+            </sly>
+
+        </ul>
+    </nav>
+</sly>
