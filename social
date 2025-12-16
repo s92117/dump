@@ -315,3 +315,53 @@ public class ShareSocialModelImpl implements ShareSocialModel {
 </sly>
 
 
+========
+
+<sly data-sly-use.model="com.aem.play.core.models.SideMenuModel" />
+
+<!-- DEBUG BLOCK -->
+<div style="border:2px dashed red; padding:10px; margin-bottom:10px;">
+    <strong>DEBUG Side Menu</strong><br/>
+
+    Model exists: ${model ? 'YES' : 'NO'}<br/>
+    Root exists: ${model.root ? 'YES' : 'NO'}<br/>
+
+    <sly data-sly-test="${model.root}">
+        Root title: ${model.root.title}<br/>
+        Root current: ${model.root.current}<br/>
+        Root URL: ${model.root.Link.url}<br/>
+        Children count: ${model.root.children @ size}<br/>
+    </sly>
+</div>
+
+<sly data-sly-test="${model.root}">
+    <nav class="side-menu">
+        <ul class="side-menu__list">
+
+            <!-- Root -->
+            <li class="side-menu__item ${model.root.current ? 'is-active' : ''}">
+                <a href="${model.root.Link.url}">
+                    ${model.root.title}
+                </a>
+            </li>
+
+            <!-- Children -->
+            <sly data-sly-list.child="${model.root.children}">
+                <li class="side-menu__item ${child.current ? 'is-active' : ''}">
+                    <a href="${child.Link.url}">
+                        ${child.title}
+                    </a>
+                </li>
+            </sly>
+
+        </ul>
+    </nav>
+</sly>
+
+<sly data-sly-test="${!model.root}">
+    <div style="color:red; font-weight:bold;">
+        DEBUG: model.root is NULL
+    </div>
+</sly>
+
+
