@@ -254,7 +254,9 @@ import org.apache.sling.models.annotations.injectorspecific.ScriptVariable;
 import org.apache.sling.models.annotations.injectorspecific.Self;
 
 /**
- * Sling Model implementation for Side Menu component.
+ * Side Menu component implementation.
+ * <p>
+ * This component provides a root navigation item and its children for Blog Detail pages.
  */
 @Model(
         adaptables = SlingHttpServletRequest.class,
@@ -266,7 +268,7 @@ import org.apache.sling.models.annotations.injectorspecific.Self;
         name = ExporterConstants.SLING_MODEL_EXPORTER_NAME,
         extensions = ExporterConstants.SLING_MODEL_EXTENSION
 )
-public class SideMenuModelImpl implements SideMenuModel {
+public final class SideMenuModelImpl implements SideMenuModel {
 
     /** Component resource type. */
     public static final String RESOURCE_TYPE = "aem-play/components/side-menu";
@@ -274,10 +276,6 @@ public class SideMenuModelImpl implements SideMenuModel {
     /** Blog Detail template path. */
     private static final String BLOG_DETAIL_TEMPLATE =
             "/conf/aem-play/settings/wcm/templates/blog-detail";
-
-    /** Blog Category template path. */
-    private static final String BLOG_CATEGORY_TEMPLATE =
-            "/conf/aem-play/settings/wcm/templates/blog-category";
 
     /** Current page. */
     @ScriptVariable
@@ -291,13 +289,20 @@ public class SideMenuModelImpl implements SideMenuModel {
     private NavigationItem root;
 
     /**
-     * Initializes the side menu.
+     * Initializes the side menu navigation for Blog Detail pages.
+     * <p>
+     * Checklist:
+     * <ul>
+     *   <li>Visible only on Blog Detail pages.</li>
+     *   <li>Root selection: parent Blog Detail → root = parent; otherwise → root = current page.</li>
+     *   <li>Children include only Blog Detail pages with hideInNav=false.</li>
+     *   <li>Active state applied correctly.</li>
+     * </ul>
      */
     @PostConstruct
     protected void init() {
-
         if (!isBlogDetail(currentPage)) {
-            return;
+            return; // Only Blog Detail pages
         }
 
         Page parent = currentPage.getParent();
@@ -307,22 +312,15 @@ public class SideMenuModelImpl implements SideMenuModel {
 
         Page rootPage;
 
-        /*
-         * RULES (from Jira):
-         * A. If parent is Blog Category → root = current page
-         * B. If parent is Blog Detail   → root = parent
-         */
-        if (isBlogCategory(parent)) {
-            rootPage = currentPage;
-        } else if (isBlogDetail(parent)) {
-            rootPage = parent;
+        if (isBlogDetail(parent)) {
+            rootPage = parent; // Parent is Blog Detail
         } else {
-            return;
+            rootPage = currentPage; // Parent any other template
         }
 
         List<NavigationItem> children = buildChildren(rootPage);
 
-        if (children.isEmpty() && !rootPage.equals(currentPage)) {
+        if (children.isEmpty() && rootPage != currentPage) {
             return;
         }
 
@@ -335,14 +333,13 @@ public class SideMenuModelImpl implements SideMenuModel {
     }
 
     /**
-     * Builds child navigation items for a root page.
+     * Builds child navigation items for the given root page.
      *
-     * @param rootPage root page
-     * @return list of navigation items
+     * @param rootPage the root page
+     * @return a list of NavigationItem children
      */
     private List<NavigationItem> buildChildren(final Page rootPage) {
         List<NavigationItem> items = new ArrayList<>();
-
         for (Page child : rootPage.listChildren()) {
             if (isBlogDetail(child) && !child.isHideInNav()) {
                 items.add(
@@ -355,44 +352,42 @@ public class SideMenuModelImpl implements SideMenuModel {
                 );
             }
         }
-
         return items;
     }
 
+    /**
+     * Returns the root navigation item.
+     *
+     * @return the root NavigationItem, or null if side menu should not render
+     */
     @Override
-    public NavigationItem getRoot() {
+    public final NavigationItem getRoot() {
         return root;
     }
 
+    /**
+     * Returns the exported resource type of the component.
+     *
+     * @return the resource type string
+     */
     @Override
-    public String getExportedType() {
+    public final String getExportedType() {
         return RESOURCE_TYPE;
     }
 
     /**
-     * Checks if page uses Blog Detail template.
+     * Checks if the page is a Blog Detail page.
      *
-     * @param page page
-     * @return true if blog detail
+     * @param page the page to check
+     * @return true if the page uses Blog Detail template
      */
     private boolean isBlogDetail(final Page page) {
         return page != null
                 && page.getTemplate() != null
                 && BLOG_DETAIL_TEMPLATE.equals(page.getTemplate().getPath());
     }
-
-    /**
-     * Checks if page uses Blog Category template.
-     *
-     * @param page page
-     * @return true if blog category
-     */
-    private boolean isBlogCategory(final Page page) {
-        return page != null
-                && page.getTemplate() != null
-                && BLOG_CATEGORY_TEMPLATE.equals(page.getTemplate().getPath());
-    }
 }
+
 
 
 ---------------
