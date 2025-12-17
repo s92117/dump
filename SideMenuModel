@@ -396,8 +396,6 @@ public class SideMenuModelImpl implements SideMenuModel {
 
 
 ---------------
-<sly data-sly-use.model="com.aem.play.core.models.SideMenuModel" />
-
 <sly data-sly-test="${model.root}">
     <nav class="side-menu" role="navigation">
         <ul class="side-menu__list">
