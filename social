@@ -207,4 +207,38 @@ public class ShareSocialModelImpl implements ShareSocialModel {
     </nav>
 </sly>
 
+===================
+<sly data-sly-use.model="com.zendesk.core.models.v1.ShareSocialModel"
+     data-sly-use.templates="core/wcm/components/commons/v1/templates.html" />
+
+<sly data-sly-test.hasContent="${model.socialNetworks && model.socialNetworks.size > 0}" />
+
+<!-- NO CONTENT -->
+<sly data-sly-test="${!hasContent}">
+  <sly data-sly-call="${templates.placeholder @ isEmpty=true,
+                        classAppend='cmp-socialshare'}" />
+</sly>
+
+<!-- CONTENT -->
+<sly data-sly-test="${hasContent && model.currentPageItem}">
+  <div class="blog-hero__social-share"
+       data-page-url="${model.currentPageItem.link.URL}"
+       data-page-title="${model.currentPageItem.title}">
+
+    <div class="social-share-horizontal"
+         role="list"
+         aria-label="Share this article">
+
+      <sly data-sly-list.network="${model.socialNetworks}">
+        <button type="button"
+                class="social-share__button social-share__button--${network}"
+                data-network="${network}"
+                aria-label="Share on ${network}">
+          <span class="icon" aria-hidden="true"></span>
+        </button>
+      </sly>
+
+    </div>
+  </div>
+</sly>
 
