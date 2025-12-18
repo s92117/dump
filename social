@@ -242,3 +242,15 @@ public class ShareSocialModelImpl implements ShareSocialModel {
   </div>
 </sly>
 
+
+-----------
+<sly
+        data-sly-resource="${'share-on-social' @
+            resourceType='zendesk/components/share-on-social/v1/share-on-social',
+            decoration=true}" />
+
+<sly data-sly-test="${wcmmode.edit && (!model.socialNetworks || model.socialNetworks.size == 0)}">
+    <div class="cq-placeholder">
+        Configure Share Social
+    </div>
+</sly>
