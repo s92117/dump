@@ -1,0 +1,117 @@
+package apps.acs_002dtools.components.aemfiddle.fiddle;
+
+import org.apache.sling.api.SlingHttpServletRequest;
+import org.apache.sling.api.SlingHttpServletResponse;
+import org.apache.sling.api.servlets.SlingAllMethodsServlet;
+
+import javax.jcr.Node;
+import javax.jcr.NodeIterator;
+import javax.jcr.Property;
+import javax.jcr.PropertyIterator;
+import javax.jcr.RepositoryException;
+import javax.jcr.Session;
+
+import java.io.IOException;
+
+public class fiddle extends SlingAllMethodsServlet {
+
+    private static final String BASE_PAGE_PATH = "/content/ebrd_dxp";
+    private static final String CF_BASE_PATH   = "/content/dam/ebrd_dxp";
+
+    private static final int FLUSH_LIMIT = 500; // flush after 500 lines
+
+    @Override
+    protected void doGet(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
+        Session session = request.getResourceResolver().adaptTo(Session.class);
+        if (session == null) {
+            response.getWriter().println("❌ Unable to adapt to JCR session.");
+            return;
+        }
+
+        StringBuilder buffer = new StringBuilder();
+        int[] counter = {0}; // mutable counter for flushing
+
+        try {
+            if (!session.nodeExists(BASE_PAGE_PATH)) {
+                response.getWriter().println("❌ Base path does not exist: " + BASE_PAGE_PATH);
+                return;
+            }
+
+            Node baseNode = session.getNode(BASE_PAGE_PATH);
+            traversePages(baseNode, buffer, counter, response);
+
+            // final flush
+            if (buffer.length() > 0) {
+                response.getWriter().print(buffer.toString());
+            }
+
+        } catch (RepositoryException e) {
+            response.getWriter().println("❌ RepositoryException: " + e.getMessage());
+        }
+    }
+
+    private void traversePages(Node node, StringBuilder buffer, int[] counter, SlingHttpServletResponse response)
+            throws RepositoryException, IOException {
+
+        if (node == null) return;
+
+        // If this node is a page
+        if (node.hasNode("jcr:content")) {
+            String pagePath = node.getPath();
+            Node contentNode = node.getNode("jcr:content");
+            checkComponents(contentNode, pagePath, buffer, counter, response);
+        }
+
+        // Traverse children
+        NodeIterator iter = node.getNodes();
+        while (iter.hasNext()) {
+            traversePages(iter.nextNode(), buffer, counter, response);
+        }
+    }
+
+    private void checkComponents(Node node, String pagePath, StringBuilder buffer, int[] counter,
+                                 SlingHttpServletResponse response) throws RepositoryException, IOException {
+
+        if (node == null) return;
+
+        PropertyIterator props = node.getProperties();
+        while (props.hasNext()) {
+            Property prop = props.nextProperty();
+            try {
+                if (prop.isMultiple()) {
+                    for (javax.jcr.Value v : prop.getValues()) {
+                        if (v.getString().startsWith(CF_BASE_PATH)) {
+                            addLine(buffer, counter, response,
+                                    pagePath + "," + node.getPath() + "," + v.getString());
+                        }
+                    }
+                } else {
+                    String val = prop.getString();
+                    if (val.startsWith(CF_BASE_PATH)) {
+                        addLine(buffer, counter, response,
+                                pagePath + "," + node.getPath() + "," + val);
+                    }
+                }
+            } catch (Exception ignore) {
+                // skip non-string props
+            }
+        }
+
+        NodeIterator children = node.getNodes();
+        while (children.hasNext()) {
+            checkComponents(children.nextNode(), pagePath, buffer, counter, response);
+        }
+    }
+
+    private void addLine(StringBuilder buffer, int[] counter,
+                         SlingHttpServletResponse response, String line) throws IOException {
+        buffer.append(line).append("\n");
+        counter[0]++;
+
+        if (counter[0] >= FLUSH_LIMIT) {
+            response.getWriter().print(buffer.toString());
+            buffer.setLength(0);
+            counter[0] = 0;
+        }
+    }
+}
